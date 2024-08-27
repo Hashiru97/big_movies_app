@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import '../services/http_service.dart';
+import '../services/movie_service.dart';
 import '../model/config.dart';
 
 class SplashPage extends StatefulWidget {
@@ -42,6 +43,10 @@ class _SplashPageState extends State<SplashPage> {
 
     getIt.registerSingleton<HttpService>(
       HttpService(),
+    );
+
+    getIt.registerSingleton<MovieService>(
+      MovieService(),
     );
   }
 

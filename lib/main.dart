@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
       title: 'big',
       initialRoute: 'home',
       routes: {
-        'home': (BuildContext context) => const MainPage(),
+        'home': (BuildContext context) => MainPage(),
       },
       theme: ThemeData(
         primarySwatch: Colors.blue,

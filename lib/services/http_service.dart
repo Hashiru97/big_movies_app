@@ -17,7 +17,7 @@ class HttpService {
     apiKey = config.apiKey;
   }
 
-  Future<Response> get(String path, {Map<String, dynamic>? query}) async {
+  Future<Response?> get(String path, {Map<String, dynamic>? query}) async {
     try {
       String url = '$baseUrl$path';
       Map<String, dynamic> queryParameters = {
@@ -30,11 +30,12 @@ class HttpService {
       return await dio.get(url, queryParameters: queryParameters);
     } on DioException catch (e) {
       logger.e('Unable to perform get request.', e);
+      return null;
     }
     // In case of failure, return an empty response or handle it as needed
-    return Response(
-      requestOptions: RequestOptions(path: path),
-      statusCode: 500,
-    );
+    catch (e, stackTrace) {
+      logger.e('Unexpected error during GET request', e, stackTrace);
+      return null;
+    }
   }
 }
