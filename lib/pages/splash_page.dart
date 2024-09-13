@@ -1,16 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
-import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:get_it/get_it.dart';
+import 'package:logger/logger.dart'; // Use Logger instead of print
 import '../services/http_service.dart';
 import '../services/movie_service.dart';
-import '../model/config.dart';
 
 class SplashPage extends StatefulWidget {
   final VoidCallback onInitializationComplete;
 
   const SplashPage({
-    super.key, // Use super parameter for key
+    super.key,
     required this.onInitializationComplete,
   });
 
@@ -21,39 +21,41 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
+  final Logger _logger = Logger(); // Initialize Logger
+
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 1)).then((_) => _setup(context).then(
+    Future.delayed(const Duration(seconds: 2)).then((_) => _setup(context).then(
           (_) => widget.onInitializationComplete(),
         ));
   }
 
   Future<void> _setup(BuildContext context) async {
     final getIt = GetIt.instance;
-    final configFile = await rootBundle.loadString('assets/config/main.json');
-    final configData = jsonDecode(configFile);
 
-    getIt.registerSingleton<AppConfig>(
-      AppConfig(
-          baseApiUrl: configData['BASE_API_URL'],
-          baseImageApiUrl: configData['BASE_IMAGE_API_URL'],
-          apiKey: configData['API_KEY']),
-    );
+    try {
+      final configFile = await rootBundle.loadString('assets/config/main.json');
+      final configData = jsonDecode(configFile);
 
-    getIt.registerSingleton<HttpService>(
-      HttpService(),
-    );
+      final baseApiUrl = configData['BASE_API_URL'] as String?;
+      final baseImageApiUrl = configData['BASE_IMAGE_API_URL'] as String?;
+      final apiKey = configData['API_KEY'] as String?;
 
-    getIt.registerSingleton<MovieService>(
-      MovieService(),
-    );
+      if (baseApiUrl == null || baseImageApiUrl == null || apiKey == null) {
+        throw Exception('Invalid configuration data.');
+      }
+
+      getIt.registerSingleton<HttpService>(HttpService());
+      getIt.registerSingleton<MovieService>(MovieService());
+    } catch (e) {
+      _logger.e('Initialization failed', e); // Use logger instead of print
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // Removed const because MaterialApp is not const
       title: 'big',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const Center(

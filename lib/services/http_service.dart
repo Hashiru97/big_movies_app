@@ -1,41 +1,29 @@
-import '../model/config.dart';
-import 'package:get_it/get_it.dart';
+// lib/services/http_service.dart
 import 'package:dio/dio.dart';
+
+import '../model/config.dart';
 import 'package:logger/logger.dart';
 
 class HttpService {
   final Dio dio = Dio();
-  final GetIt getIt = GetIt.instance;
   final Logger logger = Logger();
 
-  late String baseUrl;
-  late String apiKey;
-
   HttpService() {
-    AppConfig config = getIt.get<AppConfig>();
-    baseUrl = config.baseApiUrl;
-    apiKey = config.apiKey;
+    dio.options.baseUrl = Config.baseApiUrl;
   }
 
-  Future<Response?> get(String path, {Map<String, dynamic>? query}) async {
+  Future<Response> get(String path, {Map<String, dynamic>? query}) async {
     try {
-      String url = '$baseUrl$path';
-      Map<String, dynamic> queryParameters = {
-        'api_key': apiKey,
+      final response = await dio.get(path, queryParameters: {
+        'api_key': Config.apiKey,
         'language': 'en-US',
-      };
-      if (query != null) {
-        queryParameters.addAll(query);
-      }
-      return await dio.get(url, queryParameters: queryParameters);
+        ...?query,
+      });
+      logger.i('GET Request to $path with query $query');
+      return response;
     } on DioException catch (e) {
-      logger.e('Unable to perform get request.', e);
-      return null;
-    }
-    // In case of failure, return an empty response or handle it as needed
-    catch (e, stackTrace) {
-      logger.e('Unexpected error during GET request', e, stackTrace);
-      return null;
+      logger.e('Dio error occurred: $e');
+      throw Exception('Failed to perform GET request: ${e.message}');
     }
   }
 }

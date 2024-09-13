@@ -1,77 +1,132 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui'; // Import needed for ImageFilter
 import '../model/search_category.dart';
 import '../model/movie.dart';
+import '../model/main_page_data.dart';
+import '../widgets/movie_tile.dart';
+import '../controllers/main_page_data_controller.dart';
+import '../pages/movie_details_page.dart'; // Import Movie Details Page
 
-class MainPage extends ConsumerWidget {
-  MainPage({super.key});
+final mainPageDataControllerProvider =
+    StateNotifierProvider<MainPageDataController, MainPageData>(
+        (ref) => MainPageDataController());
 
-  late final double _deviceHeight;
-  late final double _deviceWidth;
-  final TextEditingController _searchTextFieldController =
-      TextEditingController();
+final selectedMoviePosterURLProvider = StateProvider<String?>((ref) {
+  final movies = ref.watch(mainPageDataControllerProvider).movies;
+  return (movies?.isNotEmpty ?? false) ? movies![0].posterURL : null;
+});
+
+class MainPage extends ConsumerStatefulWidget {
+  const MainPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    _deviceHeight = MediaQuery.of(context).size.height;
-    _deviceWidth = MediaQuery.of(context).size.width;
+  MainPageState createState() => MainPageState();
+}
+
+class MainPageState extends ConsumerState<MainPage> {
+  late TextEditingController _searchTextFieldController;
+  String? _selectedMoviePosterURL;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchTextFieldController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchTextFieldController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mainPageData = ref.watch(mainPageDataControllerProvider);
+    final mainPageDataController =
+        ref.read(mainPageDataControllerProvider.notifier);
+    _selectedMoviePosterURL = ref.watch(selectedMoviePosterURLProvider);
+
+    final double deviceHeight = MediaQuery.of(context).size.height;
+    final double deviceWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.black,
-      body: SizedBox(
-        height: _deviceHeight,
-        width: _deviceWidth,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            _backgroundWidget(),
-            _foregroundWidgets(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _backgroundWidget() {
-    return Container(
-      height: _deviceHeight,
-      width: _deviceWidth,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10.0),
-        image: const DecorationImage(
-          fit: BoxFit.cover,
-          image: NetworkImage(
-            'https://m.media-amazon.com/images/M/MV5BZWVjMmY4ODUtMmYzMC00NDdjLWE4MjMtOWUzMDBlNzczOGMwXkEyXkFqcGdeQWpnYW1i._V1_.jpg',
-          ),
-        ),
-      ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.2),
+      body: SafeArea(
+        child: SizedBox(
+          height: deviceHeight,
+          width: deviceWidth,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              _backgroundWidget(deviceHeight, deviceWidth),
+              _foregroundWidgets(
+                deviceHeight,
+                deviceWidth,
+                mainPageDataController,
+                mainPageData,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _foregroundWidgets() {
+  Widget _backgroundWidget(double deviceHeight, double deviceWidth) {
+    if (_selectedMoviePosterURL != null) {
+      return Container(
+        height: deviceHeight,
+        width: deviceWidth,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10.0),
+          image: DecorationImage(
+            fit: BoxFit.cover,
+            image: NetworkImage(_selectedMoviePosterURL!),
+          ),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+            ),
+          ),
+        ),
+      );
+    } else {
+      return Container(
+        height: deviceHeight,
+        width: deviceWidth,
+        color: Colors.black,
+      );
+    }
+  }
+
+  Widget _foregroundWidgets(
+    double deviceHeight,
+    double deviceWidth,
+    MainPageDataController mainPageDataController,
+    MainPageData mainPageData,
+  ) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(0, _deviceHeight * 0.02, 0, 0),
+      padding: EdgeInsets.fromLTRB(0, deviceHeight * 0.02, 0, 0),
       child: SizedBox(
-        width: _deviceWidth * 0.88,
+        width: deviceWidth * 0.88,
         child: Column(
           mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _topBarWidget(),
+            _topBarWidget(deviceHeight, deviceWidth, mainPageData,
+                mainPageDataController),
             Container(
-              height: _deviceHeight * 0.83,
-              padding: EdgeInsets.symmetric(vertical: _deviceHeight * 0.01),
-              child: _moviesListViewWidget(),
+              height: deviceHeight * 0.85,
+              padding: EdgeInsets.symmetric(vertical: deviceHeight * 0.01),
+              child: _moviesListViewWidget(deviceHeight, deviceWidth,
+                  mainPageData, mainPageDataController),
             )
           ],
         ),
@@ -79,9 +134,14 @@ class MainPage extends ConsumerWidget {
     );
   }
 
-  Widget _topBarWidget() {
+  Widget _topBarWidget(
+    double deviceHeight,
+    double deviceWidth,
+    MainPageData mainPageData,
+    MainPageDataController mainPageDataController,
+  ) {
     return Container(
-      height: _deviceHeight * 0.08,
+      height: deviceHeight * 0.08,
       decoration: BoxDecoration(
         color: Colors.black54,
         borderRadius: BorderRadius.circular(20.0),
@@ -91,21 +151,26 @@ class MainPage extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _searchFieldWidget(),
-          _categorySelectionWidget(),
+          _searchFieldWidget(deviceHeight, deviceWidth, mainPageDataController),
+          _categorySelectionWidget(mainPageDataController,
+              mainPageData.searchCategory ?? SearchCategory.popular),
         ],
       ),
     );
   }
 
-  Widget _searchFieldWidget() {
+  Widget _searchFieldWidget(
+    double deviceHeight,
+    double deviceWidth,
+    MainPageDataController mainPageDataController,
+  ) {
     return SizedBox(
-      width: _deviceWidth * 0.50,
-      height: _deviceHeight * 0.05,
+      width: deviceWidth * 0.50,
+      height: deviceHeight * 0.05,
       child: TextField(
         controller: _searchTextFieldController,
-        onSubmitted: (input) {
-          // Handle search input
+        onChanged: (input) {
+          mainPageDataController.updateSearchText(input);
         },
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
@@ -125,10 +190,13 @@ class MainPage extends ConsumerWidget {
     );
   }
 
-  Widget _categorySelectionWidget() {
+  Widget _categorySelectionWidget(
+    MainPageDataController mainPageDataController,
+    String selectedCategory,
+  ) {
     return DropdownButton<String>(
       dropdownColor: Colors.black38,
-      value: SearchCategory.popular,
+      value: selectedCategory,
       icon: const Icon(
         Icons.menu,
         color: Colors.white24,
@@ -137,8 +205,11 @@ class MainPage extends ConsumerWidget {
         height: 1,
         color: Colors.white24,
       ),
-      onChanged: (value) {
-        // Handle category change
+      onChanged: (String? value) {
+        if (value != null) {
+          _searchTextFieldController.clear(); // Clear the search field
+          mainPageDataController.updateSearchCategory(value);
+        }
       },
       items: const [
         DropdownMenuItem(
@@ -156,6 +227,27 @@ class MainPage extends ConsumerWidget {
           ),
         ),
         DropdownMenuItem(
+          value: SearchCategory.latest,
+          child: Text(
+            SearchCategory.latest,
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+        DropdownMenuItem(
+          value: SearchCategory.nowPlaying,
+          child: Text(
+            SearchCategory.nowPlaying,
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+        DropdownMenuItem(
+          value: SearchCategory.topRated,
+          child: Text(
+            SearchCategory.topRated,
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+        DropdownMenuItem(
           value: SearchCategory.none,
           child: Text(
             SearchCategory.none,
@@ -166,39 +258,59 @@ class MainPage extends ConsumerWidget {
     );
   }
 
-  Widget _moviesListViewWidget() {
-    final List<Movie> _movies = [];
+  Widget _moviesListViewWidget(
+    double deviceHeight,
+    double deviceWidth,
+    MainPageData mainPageData,
+    MainPageDataController mainPageDataController,
+  ) {
+    final List<Movie> movies = mainPageData.movies ?? [];
 
-    for (var i = 0; i < 20; i++) {
-      _movies.add(
-        Movie(
-          name: "Deadpool & Wolverine",
-          language: "EN",
-          isAdult: false,
-          description:
-              "Deadpool's peaceful existence comes crashing down when the Time Variance Authority recruits him to help safeguard the multiverse. He soon unites with his would-be pal, Wolverine, to complete the mission and save his world from an existential threat.",
-          posterPath: "/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg",
-          backdropPath: "/yDHYTfA3R0jFYba16jBB1ef8oIt.jpg",
-          rating: 7.8,
-          release: "2021-04-07",
-        ),
-      );
-    }
-    if (_movies.length != 0) {
-      return ListView.builder(
-          itemCount: _movies.length,
-          itemBuilder: (BuildContext _context, int _count) {
+    if (movies.isNotEmpty) {
+      return NotificationListener<ScrollNotification>(
+        onNotification: (scrollNotification) {
+          if (scrollNotification is ScrollEndNotification) {
+            final before = scrollNotification.metrics.extentBefore;
+            final max = scrollNotification.metrics.maxScrollExtent;
+            if (before == max) {
+              // Call the fetch movies method from the controller
+              mainPageDataController.fetchMovies();
+              return true;
+            }
+          }
+          return false;
+        },
+        child: ListView.builder(
+          itemCount: movies.length,
+          itemBuilder: (BuildContext context, int count) {
             return Padding(
               padding: EdgeInsets.symmetric(
-                  vertical: _deviceHeight * 0.01, horizontal: 0),
+                  vertical: deviceHeight * 0.01, horizontal: 0),
               child: GestureDetector(
-                onTap: () {},
-                child: Text(_movies[_count].name),
+                onTap: () {
+                  ref.read(selectedMoviePosterURLProvider.notifier).state =
+                      movies[count].posterURL;
+                  // Navigate to the movie details page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MovieDetailsPage(
+                          movie: movies[count]), // Updated to MovieDetailsPage
+                    ),
+                  );
+                },
+                child: MovieTile(
+                  movie: movies[count],
+                  height: deviceHeight * 0.20,
+                  width: deviceWidth * 0.85,
+                ),
               ),
             );
-          });
+          },
+        ),
+      );
     } else {
-      return Center(
+      return const Center(
         child: CircularProgressIndicator(
           backgroundColor: Colors.white,
         ),

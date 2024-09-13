@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import './pages/splash_page.dart';
@@ -7,11 +8,15 @@ void main() {
   runApp(
     SplashPage(
       key: UniqueKey(),
-      onInitializationComplete: () => runApp(
-        const ProviderScope(
-          child: MyApp(),
-        ),
-      ),
+      onInitializationComplete: _launchApp,
+    ),
+  );
+}
+
+void _launchApp() {
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
     ),
   );
 }
@@ -25,7 +30,7 @@ class MyApp extends StatelessWidget {
       title: 'big',
       initialRoute: 'home',
       routes: {
-        'home': (BuildContext context) => MainPage(),
+        'home': (BuildContext context) => const MainPage(),
       },
       theme: ThemeData(
         primarySwatch: Colors.blue,
