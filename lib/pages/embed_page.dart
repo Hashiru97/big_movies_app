@@ -16,7 +16,28 @@ class EmbedPage extends StatelessWidget {
       body: WebView(
         initialUrl: embedUrl,
         javascriptMode: JavascriptMode.unrestricted,
+        navigationDelegate: (NavigationRequest request) {
+          if (_isAdUrl(request.url)) {
+            return NavigationDecision.prevent;
+          }
+          return NavigationDecision.navigate;
+        },
       ),
     );
+  }
+
+  bool _isAdUrl(String url) {
+    List<String> adDomains = [
+      'ads',
+      'popads',
+      'doubleclick',
+      'adservice',
+      'trackers',
+      'googleadservices',
+      'ad-delivery',
+      'openx',
+    ];
+
+    return adDomains.any((adDomain) => url.contains(adDomain));
   }
 }

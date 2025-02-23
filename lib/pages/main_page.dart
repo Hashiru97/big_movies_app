@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../model/search_category.dart';
-import '../model/movie.dart';
 import '../model/main_page_data.dart';
 import '../widgets/movie_tile.dart';
 import '../controllers/main_page_data_controller.dart';
-import '../pages/movie_details_page.dart'; // Import Movie Details Page
+import '../pages/movie_details_page.dart';
+import '../widgets/tv_show_tile.dart';
+import '../pages/tv_show_details_page.dart';
 
 final mainPageDataControllerProvider =
     StateNotifierProvider<MainPageDataController, MainPageData>(
@@ -52,7 +52,6 @@ class MainPageState extends ConsumerState<MainPage> {
     final double deviceWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.black,
       body: SafeArea(
         child: SizedBox(
@@ -147,9 +146,7 @@ class MainPageState extends ConsumerState<MainPage> {
         borderRadius: BorderRadius.circular(20.0),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _searchFieldWidget(deviceHeight, deviceWidth, mainPageDataController),
           _categorySelectionWidget(mainPageDataController,
@@ -197,62 +194,59 @@ class MainPageState extends ConsumerState<MainPage> {
     return DropdownButton<String>(
       dropdownColor: Colors.black38,
       value: selectedCategory,
-      icon: const Icon(
-        Icons.menu,
-        color: Colors.white24,
-      ),
-      underline: Container(
-        height: 1,
-        color: Colors.white24,
-      ),
+      icon: const Icon(Icons.menu, color: Colors.white24),
+      underline: Container(height: 1, color: Colors.white24),
       onChanged: (String? value) {
         if (value != null) {
-          _searchTextFieldController.clear(); // Clear the search field
+          _searchTextFieldController.clear();
           mainPageDataController.updateSearchCategory(value);
         }
       },
       items: const [
         DropdownMenuItem(
           value: SearchCategory.popular,
-          child: Text(
-            SearchCategory.popular,
-            style: TextStyle(color: Colors.white),
-          ),
+          child: Text(SearchCategory.popular,
+              style: TextStyle(color: Colors.white)),
         ),
         DropdownMenuItem(
           value: SearchCategory.upcoming,
-          child: Text(
-            SearchCategory.upcoming,
-            style: TextStyle(color: Colors.white),
-          ),
+          child: Text(SearchCategory.upcoming,
+              style: TextStyle(color: Colors.white)),
         ),
         DropdownMenuItem(
           value: SearchCategory.latest,
-          child: Text(
-            SearchCategory.latest,
-            style: TextStyle(color: Colors.white),
-          ),
+          child: Text(SearchCategory.latest,
+              style: TextStyle(color: Colors.white)),
         ),
         DropdownMenuItem(
           value: SearchCategory.nowPlaying,
-          child: Text(
-            SearchCategory.nowPlaying,
-            style: TextStyle(color: Colors.white),
-          ),
+          child: Text(SearchCategory.nowPlaying,
+              style: TextStyle(color: Colors.white)),
         ),
         DropdownMenuItem(
           value: SearchCategory.topRated,
-          child: Text(
-            SearchCategory.topRated,
-            style: TextStyle(color: Colors.white),
-          ),
+          child: Text(SearchCategory.topRated,
+              style: TextStyle(color: Colors.white)),
         ),
         DropdownMenuItem(
-          value: SearchCategory.none,
-          child: Text(
-            SearchCategory.none,
-            style: TextStyle(color: Colors.white),
-          ),
+          value: SearchCategory.tvAiringToday,
+          child: Text(SearchCategory.tvAiringToday,
+              style: TextStyle(color: Colors.white)),
+        ),
+        DropdownMenuItem(
+          value: SearchCategory.tvOnTheAir,
+          child: Text(SearchCategory.tvOnTheAir,
+              style: TextStyle(color: Colors.white)),
+        ),
+        DropdownMenuItem(
+          value: SearchCategory.tvPopular,
+          child: Text(SearchCategory.tvPopular,
+              style: TextStyle(color: Colors.white)),
+        ),
+        DropdownMenuItem(
+          value: SearchCategory.tvTopRated,
+          child: Text(SearchCategory.tvTopRated,
+              style: TextStyle(color: Colors.white)),
         ),
       ],
     );
@@ -264,57 +258,70 @@ class MainPageState extends ConsumerState<MainPage> {
     MainPageData mainPageData,
     MainPageDataController mainPageDataController,
   ) {
-    final List<Movie> movies = mainPageData.movies ?? [];
+    final isTVCategory =
+        mainPageData.searchCategory?.contains("TV Shows") ?? false;
+    final items = isTVCategory ? mainPageData.tvShows : mainPageData.movies;
 
-    if (movies.isNotEmpty) {
+    if (items != null && items.isNotEmpty) {
       return NotificationListener<ScrollNotification>(
         onNotification: (scrollNotification) {
           if (scrollNotification is ScrollEndNotification) {
             final before = scrollNotification.metrics.extentBefore;
             final max = scrollNotification.metrics.maxScrollExtent;
             if (before == max) {
-              // Call the fetch movies method from the controller
-              mainPageDataController.fetchMovies();
+              mainPageDataController.fetchMoviesOrTVShows();
               return true;
             }
           }
           return false;
         },
         child: ListView.builder(
-          itemCount: movies.length,
+          itemCount: items.length,
           itemBuilder: (BuildContext context, int count) {
-            return Padding(
-              padding: EdgeInsets.symmetric(
-                  vertical: deviceHeight * 0.01, horizontal: 0),
-              child: GestureDetector(
+            if (isTVCategory) {
+              final tvShow = mainPageData.tvShows![count];
+              return GestureDetector(
                 onTap: () {
                   ref.read(selectedMoviePosterURLProvider.notifier).state =
-                      movies[count].posterURL;
-                  // Navigate to the movie details page
+                      tvShow.posterURL;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => MovieDetailsPage(
-                          movie: movies[count]), // Updated to MovieDetailsPage
-                    ),
+                        builder: (context) =>
+                            TVShowDetailsPage(tvShow: tvShow)),
                   );
                 },
-                child: MovieTile(
-                  movie: movies[count],
+                child: TVShowTile(
+                  tvShow: tvShow,
                   height: deviceHeight * 0.20,
                   width: deviceWidth * 0.85,
                 ),
-              ),
-            );
+              );
+            } else {
+              final movie = mainPageData.movies![count];
+              return GestureDetector(
+                onTap: () {
+                  ref.read(selectedMoviePosterURLProvider.notifier).state =
+                      movie.posterURL;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => MovieDetailsPage(movie: movie)),
+                  );
+                },
+                child: MovieTile(
+                  movie: movie,
+                  height: deviceHeight * 0.20,
+                  width: deviceWidth * 0.85,
+                ),
+              );
+            }
           },
         ),
       );
     } else {
       return const Center(
-        child: CircularProgressIndicator(
-          backgroundColor: Colors.white,
-        ),
-      );
+          child: CircularProgressIndicator(backgroundColor: Colors.white));
     }
   }
 }

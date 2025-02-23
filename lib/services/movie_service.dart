@@ -1,6 +1,6 @@
 import 'package:get_it/get_it.dart';
 import '../services/http_service.dart';
-import '../model/app_provider.dart';
+import '../model/tv_show.dart';
 import '../model/movie.dart';
 
 class MovieService {
@@ -11,7 +11,7 @@ class MovieService {
     _httpService = getIt.get<HttpService>();
   }
 
-  // Fetch popular movies and ensure each movie has an id
+  // Fetch popular movies
   Future<List<Movie>> getPopularMovies({required int page}) async {
     try {
       final response = await _httpService.get('/movie/popular', query: {
@@ -28,6 +28,7 @@ class MovieService {
     }
   }
 
+  // Fetch upcoming movies
   Future<List<Movie>> getUpcomingMovies({required int page}) async {
     try {
       final response = await _httpService.get('/movie/upcoming', query: {
@@ -43,13 +44,13 @@ class MovieService {
     }
   }
 
+  // Search for movies
   Future<List<Movie>> searchMovies(
       {required String query, required int page}) async {
     try {
       final response = await _httpService.get('/search/movie', query: {
         'query': query,
         'page': page,
-        'include_adult': false,
       });
 
       List<Movie> movies = (response.data['results'] as List)
@@ -61,6 +62,7 @@ class MovieService {
     }
   }
 
+  // Fetch latest movie
   Future<List<Movie>> getLatestMovie() async {
     try {
       final response = await _httpService.get('/movie/latest');
@@ -76,6 +78,7 @@ class MovieService {
     }
   }
 
+  // Fetch Now Playing Movies
   Future<List<Movie>> getNowPlayingMovies({required int page}) async {
     try {
       final response = await _httpService.get('/movie/now_playing', query: {
@@ -91,6 +94,7 @@ class MovieService {
     }
   }
 
+  // Fetch top-rated movies
   Future<List<Movie>> getTopRatedMovies({required int page}) async {
     try {
       final response = await _httpService.get('/movie/top_rated', query: {
@@ -102,46 +106,85 @@ class MovieService {
           .toList();
       return movies;
     } catch (e) {
-      throw Exception('Error occurred while fetching top rated movies: $e');
+      throw Exception('Error occurred while fetching top-rated movies: $e');
     }
   }
 
-  Future<List<Provider>> getWatchProviders(int movieId) async {
+  // Fetch airing today TV shows
+  Future<List<TVShow>> getAiringTodayTVShows({required int page}) async {
     try {
-      final response =
-          await _httpService.get('/movie/$movieId/watch/providers');
-      final providersData =
-          response.data['results']['US'] ?? {}; // Adjust for your region
+      final response = await _httpService.get('/tv/airing_today', query: {
+        'page': page,
+      });
 
-      List<Provider> providers = [];
-      if (providersData['free'] != null) {
-        providers = (providersData['free'] as List)
-            .map<Provider>((providerData) => Provider.fromJson(providerData))
-            .toList();
-      } else if (providersData['buy'] != null) {
-        providers = (providersData['buy'] as List)
-            .map<Provider>((providerData) => Provider.fromJson(providerData))
-            .toList();
-      }
-      return providers;
+      return (response.data['results'] as List)
+          .map((tvShowData) => TVShow.fromJson(tvShowData))
+          .toList();
     } catch (e) {
-      throw Exception('Error occurred while fetching watch providers: $e');
+      throw Exception(
+          'Error occurred while fetching airing today TV shows: $e');
     }
   }
 
-  // Method to get movie embed URL using TMDB ID
-  Future<String> getMovieEmbedUrl({required String tmdbId}) async {
-    final embedUrl = 'https://vidsrc.xyz/embed/movie?tmdb=$tmdbId';
-    return embedUrl; // Return the constructed embed URL for the movie
+  // Fetch on-the-air TV shows
+  Future<List<TVShow>> getOnTheAirTVShows({required int page}) async {
+    try {
+      final response = await _httpService.get('/tv/on_the_air', query: {
+        'page': page,
+      });
+
+      return (response.data['results'] as List)
+          .map((tvShowData) => TVShow.fromJson(tvShowData))
+          .toList();
+    } catch (e) {
+      throw Exception('Error occurred while fetching on-the-air TV shows: $e');
+    }
   }
 
-  // Method to get TV show embed URL using TMDB ID
-  Future<String> getTvEmbedUrl(
-      {required String tmdbId,
-      required int season,
-      required int episode}) async {
-    final embedUrl =
-        'https://vidsrc.xyz/embed/tv?tmdb=$tmdbId&season=$season&episode=$episode';
-    return embedUrl; // Return the constructed embed URL for the TV show
+  // Fetch popular TV shows
+  Future<List<TVShow>> getPopularTVShows({required int page}) async {
+    try {
+      final response = await _httpService.get('/tv/popular', query: {
+        'page': page,
+      });
+
+      return (response.data['results'] as List)
+          .map((tvShowData) => TVShow.fromJson(tvShowData))
+          .toList();
+    } catch (e) {
+      throw Exception('Error occurred while fetching popular TV shows: $e');
+    }
+  }
+
+  // Fetch top-rated TV shows
+  Future<List<TVShow>> getTopRatedTVShows({required int page}) async {
+    try {
+      final response = await _httpService.get('/tv/top_rated', query: {
+        'page': page,
+      });
+
+      return (response.data['results'] as List)
+          .map((tvShowData) => TVShow.fromJson(tvShowData))
+          .toList();
+    } catch (e) {
+      throw Exception('Error occurred while fetching top-rated TV shows: $e');
+    }
+  }
+
+  // Search TV Shows (new function)
+  Future<List<TVShow>> searchTVShows(
+      {required String query, required int page}) async {
+    try {
+      final response = await _httpService.get('/search/tv', query: {
+        'query': query,
+        'page': page,
+      });
+
+      return (response.data['results'] as List)
+          .map((tvShowData) => TVShow.fromJson(tvShowData))
+          .toList();
+    } catch (e) {
+      throw Exception('Error occurred while searching TV shows: $e');
+    }
   }
 }

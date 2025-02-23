@@ -36,11 +36,32 @@ class MovieDetailsPage extends StatelessWidget {
                   ),
                 );
               },
-              child: Image.network(
-                movie.posterURL,
-                height: deviceHeight * 0.72, // Adjusting height dynamically
-                width: deviceWidth, // Set width to device width
-                fit: BoxFit.cover, // Cover the full width of the screen
+              child: Stack(
+                alignment: Alignment.center, // Center the text
+                children: [
+                  Image.network(
+                    movie.posterURL,
+                    height: deviceHeight * 0.72, // Adjusting height dynamically
+                    width: deviceWidth, // Set width to device width
+                    fit: BoxFit.cover, // Cover the full width of the screen
+                  ),
+                  // Overlay the text on top of the image
+                  Container(
+                    height: deviceHeight * 0.72,
+                    width: deviceWidth,
+                    alignment: Alignment.center,
+                    color: Colors.black45
+                        .withOpacity(0.5), // Semi-transparent background
+                    child: const Text(
+                      'Click here to play',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(

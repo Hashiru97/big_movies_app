@@ -26,7 +26,7 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 2)).then((_) => _setup(context).then(
+    Future.delayed(const Duration(seconds: 1)).then((_) => _setup(context).then(
           (_) => widget.onInitializationComplete(),
         ));
   }
